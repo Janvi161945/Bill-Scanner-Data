@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Scanner - Mobile Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #f8f9ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #f0f4ff;
+            border-color: #667eea;
+            transform: scale(1.02);
+        }
+
+        .camera-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-area {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-scan:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-process {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-process:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .result-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .api-url {
+            background: #f8f9ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .api-url input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Bill Scanner</h1>
+        <p class="subtitle">Scan Tally bills and save to Google Sheets</p>
+
+        <div class="api-url">
+            <label>API Server URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:5000" placeholder="http://localhost:5000">
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="camera-icon">📸</div>
+            <p><strong>Tap to capture or upload bill</strong></p>
+            <p style="font-size: 12px; color: #999; margin-top: 5px;">Supports JPG, PNG, JPEG</p>
+            <input type="file" id="fileInput" accept="image/*" capture="environment">
+        </div>
+
+        <div class="preview-area" id="previewArea" style="display: none;">
+            <img id="previewImage" class="preview-image" alt="Preview">
+        </div>
+
+        <div class="button-group" id="buttonGroup" style="display: none;">
+            <button class="btn-scan" onclick="scanBill()">Extract Data</button>
+            <button class="btn-process" onclick="processBill()">Save to Sheets</button>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <div id="resultArea"></div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const previewImage = document.getElementById('previewImage');
+        const buttonGroup = document.getElementById('buttonGroup');
+        const loading = document.getElementById('loading');
+        const resultArea = document.getElementById('resultArea');
+        const apiUrlInput = document.getElementById('apiUrl');
+
+        let selectedFile = null;
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File selected
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                displayPreview(file);
+            }
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                selectedFile = file;
+                displayPreview(file);
+            }
+        });
+
+        function displayPreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewArea.style.display = 'block';
+                buttonGroup.style.display = 'flex';
+                resultArea.innerHTML = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function scanBill() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            loading.style.display = 'block';
+            resultArea.innerHTML = '';
+            buttonGroup.style.display = 'none';
+
+            try {
+                const apiUrl = apiUrlInput.value || 'http://localhost:5000';
+                const response = await fetch(`${apiUrl}/api/scan-bill`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                loading.style.display = 'none';
+                buttonGroup.style.display = 'flex';
+
+                if (result.success) {
+                    displayResult(result.data);
+                } else {
+                    displayError(result.error || 'Failed to scan bill');
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                buttonGroup.style.display = 'flex';
+                displayError('Network error: ' + error.message);
+            }
+        }
+
+        async function processBill() {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+
+            loading.style.display = 'block';
+            resultArea.innerHTML = '';
+            buttonGroup.style.display = 'none';
+
+            try {
+                const apiUrl = apiUrlInput.value || 'http://localhost:5000';
+                const response = await fetch(`${apiUrl}/api/process-bill`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                loading.style.display = 'none';
+                buttonGroup.style.display = 'flex';
+
+                if (result.success) {
+                    displayResult(result.data);
+                    displaySuccess('✓ Bill saved to Google Sheets successfully!');
+                } else {
+                    displayError(result.error || 'Failed to process bill');
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                buttonGroup.style.display = 'flex';
+                displayError('Network error: ' + error.message);
+            }
+        }
+
+        function displayResult(data) {
+            const html = `
+                <div class="result">
+                    <div class="result-title">Extracted Data</div>
+                    <div class="result-item">
+                        <span class="result-label">Invoice No:</span>
+                        <span class="result-value">${data.invoice_no || 'N/A'}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Bill Date:</span>
+                        <span class="result-value">${data.bill_date || 'N/A'}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Buyer:</span>
+                        <span class="result-value">${data.buyer || 'N/A'}</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Total Amount:</span>
+                        <span class="result-value">₹${data.total_amount ? data.total_amount.toFixed(2) : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+            resultArea.innerHTML = html;
+        }
+
+        function displaySuccess(message) {
+            const html = `<div class="success">${message}</div>`;
+            resultArea.innerHTML += html;
+        }
+
+        function displayError(message) {
+            const html = `<div class="error">Error: ${message}</div>`;
+            resultArea.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
